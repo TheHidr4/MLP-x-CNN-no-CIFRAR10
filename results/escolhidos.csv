@@ -1,0 +1,4 @@
+model,kernel,seed,test_accuracy,epochs
+mlp,NA,42,0.5192000269889832,12
+cnn,3,42,0.8140000104904175,30
+cnn,5,41,0.7937999963760376,22
