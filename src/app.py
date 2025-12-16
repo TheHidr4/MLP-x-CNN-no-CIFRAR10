@@ -1,13 +1,11 @@
 import streamlit as st
 import numpy as np
-import tensorflow as tf
 from PIL import Image
-import cv2
+from data import load_data
 import pandas as pd
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
-from models import modelo_cnn
-from viz import grad_cam, overlay_heatmap
+from viz import grad_cam, overlay_heatmap, plot_confusion_matrix
 
 
 # Configura a página
@@ -33,7 +31,12 @@ if view == "Grad-CAM: CNN 3×3 vs 5×5":
     model_k3 = load_model("models/cnn_k3_seed42.keras")
 
     model_k5 = load_model("models/cnn_k5_seed41.keras")
+    # Pega os dados de treino
+    _, _, _, _, x_test, y_test = load_data()
 
+    y_test_labels = np.argmax(y_test, axis=1)
+
+    #Começa o processo de envio e conversão da imagem
     uploaded = st.file_uploader("Envie uma imagem (32x32 ou maior)", type=["png", "jpg", "jpeg"])
 
     if uploaded:
@@ -65,28 +68,50 @@ if view == "Grad-CAM: CNN 3×3 vs 5×5":
                     "O modelo focou nas regiões mais importantes da imagem para tomar a decisão."
             )
 
+    # Cria a seção da matriz de confusão
+    st.divider()
+    st.subheader("Matriz de Confusão (Teste)")
+
+    if st.button("Gerar matriz de confusão"):
+        for name, model in [("CNN k=3", model_k3), ("CNN k=5", model_k5)]:
+            preds = model.predict(x_test, verbose=0)
+            y_pred = np.argmax(preds, axis=1)
+
+            fig = plot_confusion_matrix(
+                y_test_labels,
+                y_pred,
+                CLASSES,
+                title=name
+            )
+
+            st.pyplot(fig)
+
+
 
 # Desempenho view
 elif view == "Desempenho: MLP vs CNN":
-
+    # Cria o titulo
     st.title("Comparação de Desempenho")
     df = pd.read_csv("results/escolhidos.csv")
-
+ 
+    # Pega o MLP e divide seus parametros
     mlp_row = df[df["model"]=="mlp"].iloc[0]
     mlp_acc = mlp_row["test_accuracy"]
     mlp_epochs = int(mlp_row["epochs"])
-
+    # Pega o melhpr CNN e divide seus parametros
     cnn_df = df[df["model"]=="cnn"]
     best_cnn_row = cnn_df.loc[cnn_df["test_accuracy"].idxmax()]
     best_cnn_acc = best_cnn_row["test_accuracy"]
     best_cnn_kernel = int(best_cnn_row["kernel"])
     best_cnn_epochs = int(best_cnn_row["epochs"])
 
+    # Cria a tabela de resultados
     st.success(f"Melhor CNN: kernel {best_cnn_kernel}×{best_cnn_kernel}, "
                f"{best_cnn_epochs} épocas, acurácia {best_cnn_acc:.2%}")
 
     st.dataframe(df)
 
+    # Plota o gráfico de barras
     fig, ax = plt.subplots()
     models = [f"MLP\n({mlp_epochs} épocas)", f"CNN {best_cnn_kernel}×{best_cnn_kernel}\n({best_cnn_epochs} épocas)"]
     accs = [mlp_acc, best_cnn_acc]

@@ -1,8 +1,10 @@
 import numpy as np
 import tensorflow as tf
 import cv2
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
 
-
+# Define a função Grad-CAM
 def grad_cam(model, img, class_idx, layer_name="last_convolution"):
     # Garante que o modelo foi inicializado
     model(img, training=False)
@@ -40,10 +42,10 @@ def grad_cam(model, img, class_idx, layer_name="last_convolution"):
 
     heatmap = np.maximum(heatmap, 0)
     heatmap /= np.max(heatmap) + 1e-8
-
+    # Retorna a heatmap
     return heatmap
 
-
+# Cria a função para sobrepor a heatmap na imagem original
 def overlay_heatmap(img, heatmap):
     heatmap = cv2.resize(heatmap, (32, 32))
     heatmap = np.uint8(255 * heatmap)
@@ -53,4 +55,28 @@ def overlay_heatmap(img, heatmap):
     overlay = cv2.addWeighted(img, 0.6, heatmap, 0.4, 0)
     return overlay
 
+# Cria e plota a matriz confusão
+def plot_confusion_matrix(y_true, y_pred, class_names, title):
+    cm = confusion_matrix(y_true, y_pred)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm)
+
+    ax.set_xticks(range(len(class_names)))
+    ax.set_yticks(range(len(class_names)))
+
+    ax.set_xticklabels(class_names, rotation=45, ha="right")
+    ax.set_yticklabels(class_names)
+
+    ax.set_xlabel("Previsto")
+    ax.set_ylabel("Real")
+    ax.set_title(title)
+
+    for i in range(len(class_names)):
+        for j in range(len(class_names)):
+            ax.text(j, i, cm[i, j],
+                    ha="center", va="center")
+
+    fig.tight_layout()
+    return fig
 

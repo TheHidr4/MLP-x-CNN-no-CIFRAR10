@@ -13,8 +13,7 @@ parser.add_argument("--seed", type=int, required=True)
 parser.add_argument("--kernel", type=int, default=3)
 args = parser.parse_args()
 
-# Define a seed para reprodutibilidade (Usarei:
-#  41, 42, 43)
+# Define a seed para reprodutibilidade (Usarei: 41, 42, 43)
 tf.random.set_seed(args.seed)
 
 # Carrega os dados
